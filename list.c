@@ -32,9 +32,9 @@ insert (struct item **tail, const int n)
 	if (*tail != NULL)
 	{
 		(*tail)->next =		p;
-		*tail =				(*tail)->next;
+		*tail =			(*tail)->next;
 	} else {
-		*tail =				p;
+		*tail =			p;
 	}
 
 	(*tail)->n =			n;
@@ -51,7 +51,7 @@ void
 remove_item (struct item **head)
 {
 	struct item *p =		*head;
-	*head =					(*head)->next;
+	*head =				(*head)->next;
 	free(p);
 	return;
 }
@@ -74,7 +74,7 @@ print_list (struct item *head)
 	while (head != NULL)
 	{
 		printf(" %d", head->n);
-		head =				head->next;
+		head =			head->next;
 	}
 	printf("\n");
 }
