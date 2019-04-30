@@ -85,7 +85,7 @@ main (int argc, char ** argv)
 {
 	struct item *head =		NULL;
 	struct item *tail =		NULL;
-	char initialized = 0;
+	char initialized =		0;
 
 	for (int i = 1; i < argc; ++i)
 	{
@@ -102,7 +102,7 @@ main (int argc, char ** argv)
 					err(1, "List already created, exiting");
 
 				tail =		head;
-				initialized = 1;
+				initialized =	1;
 				break;
 
 			/*
@@ -150,7 +150,6 @@ main (int argc, char ** argv)
 
 				print_list(head);
 				break;
-
 
 			default:
 				goto wrong_command;
