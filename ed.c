@@ -66,86 +66,128 @@ read_file (const char *arg, int *p_n_lines, int *n_chars, char *p_options)
 	return lines;
 }
 
+void
+opt_help()
+{
+	printf("Usage: ed [options] [file]\n"
+		   "Options:\n"
+		   "-h, --help                 display this help and exit\n"
+		   "-V, --version              output version information and exitn\n"
+		   "-G, --traditional          run in compatibility mode\n"
+		   "-l, --loose-exit-status    exit with 0 status even if a command fails\n"
+		   "-p, --prompt=STRING        use STRING as an interactive prompt\n"
+		   "-r, --restricted           run in restricted mode\n"
+		   "-s, --quiet, --silent      suppress diagnostics, byte counts and '!' prompt\n"
+		   "-v, --verbose              be verbose; equivalent to the 'H' command\n\n"
+		   "Commands:\n"
+		   "(.,.)					   Print the addressed line(s), and sets the current address to the last line printed.\n"
+		   "H						   Toggle the printing of error explanations.\n"
+		   "h 					       Print an explanation of the last error.\n"
+		   "(.,.)n					   Print the addressed lines along with their line numbers.\n"
+		   "(.,.)p					   Print the addressed lines. The current address is set to the last line printed.\n"
+		   "q   				       Quit ed.\n"
+		   "Start edit by reading in 'file' if given.\n");
+	exit(0);
+}
+
+void
+opt_version()
+{
+	printf("ed 1.00.0\n"
+		   "Copyright (C) 2019 Filip Cizmar.\n"
+		   "This is free software: you are free to change and redistribute it.\n"
+		   "There is NO WARRANTY, to the extent permitted by law.\n");
+	exit(0);
+}
+
+void opt_traditional(char *p_options)
+{
+	printf("Compatibility mode has no effect in current version.\n");
+	*p_options |= 1U << options_TRADITIONAL;
+}
+
+
 int
-load_options (char *p_options, char *p_prompt, char ** argv, const int argc)
+load_options (char *p_options, char *prompt, char ** argv, const int argc)
 {
 	int i;
 	for (i = 1 ; i < argc; ++i)
-		if (argv[i][0] == '-')
-		{
-			if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help"))
-			{
-				printf("Usage: ed [options] [file]\n"
-					   "Options:\n"
-					   "-h, --help                 display this help and exit\n"
-					   "-V, --version              output version information and exitn\n"
-					   "-G, --traditional          run in compatibility mode\n"
-					   "-l, --loose-exit-status    exit with 0 status even if a command fails\n"
-					   "-p, --prompt=STRING        use STRING as an interactive prompt\n"
-					   "-r, --restricted           run in restricted mode\n"
-					   "-s, --quiet, --silent      suppress diagnostics, byte counts and '!' prompt\n"
-					   "-v, --verbose              be verbose; equivalent to the 'H' command\n\n"
-					   "Commands:\n"
-					   "(.,.)					   Print the addressed line(s), and sets the current address to the last line printed.\n"
-					   "H						   Toggle the printing of error explanations.\n"
-					   "h 					       Print an explanation of the last error.\n"
-					   "(.,.)n					   Print the addressed lines along with their line numbers.\n"
-					   "(.,.)p					   Print the addressed lines. The current address is set to the last line printed.\n"
-					   "q   				       Quit ed.\n"
-					   "Start edit by reading in 'file' if given.\n");
-				exit(0);
-			}
+		if (argv[i][0] == '-' && argv[i][1] == '-')
+			if (!strcmp(argv[i], "--help"))
+				opt_help();
 			
-			else if (!strcmp(argv[i], "-V") || !strcmp(argv[i], "--version"))
-			{
-				printf("ed 1.00.0\n"
-					   "Copyright (C) 2019 Filip Cizmar.\n"
-					   "This is free software: you are free to change and redistribute it.\n"
-					   "There is NO WARRANTY, to the extent permitted by law.\n");
-				exit(0);
-			}
+			else if (!strcmp(argv[i], "--version"))
+				opt_version();
 			
-			else if (!strcmp(argv[i], "-G") || !strcmp(argv[i], "--traditional"))
-			{
-				printf("Compatibility mode has no effect in current version.\n");
-				*p_options |= 1U << options_TRADITIONAL;
-			}
+			else if (!strcmp(argv[i], "--traditional"))
+				opt_traditional(p_options);
 			
-			else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--loose-exit-status"))
+			else if (!strcmp(argv[i], "--loose-exit-status"))
 				*p_options |= 1U << options_LOOSE_EXIT_STATUS;
 			
-			else if (!strcmp(argv[i], "-p") || !strncmp(argv[i], "--prompt=", strlen("--prompt=")))
+			else if (!strncmp(argv[i], "--prompt=", strlen("--prompt=")))
 			{
 				*p_options |= 1U << options_PROMPT;
-				if (!strcmp(argv[i], "-p"))
-					if (++i == argc)
-					{
-						fprintf(stderr, "ed: illegal option -- p, trailered STRING needed\n");
-						fprintf(stderr, "usage: ed file\n");
-						exit(1);
-					}
-					else
-						strcpy(p_prompt, argv[i]);
-				else
-					strcpy(p_prompt, argv[i] + strlen("--prompt="));
+				strcpy(prompt, argv[i] + strlen("--prompt="));
 			}
 			
-			else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--restricted"))
+			else if (!strcmp(argv[i], "--restricted"))
 				*p_options |= 1U << options_RESTRICTED;
 			
-			else if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--quiet") || !strcmp(argv[i], "--silent"))
+			else if (!strcmp(argv[i], "--quiet") || !strcmp(argv[i], "--silent"))
 				*p_options |= 1U << options_QUIET;
 			
-			else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose"))
+			else if (!strcmp(argv[i], "--verbose"))
 				*p_options |= 1U << options_VERBOSE;
 			
 			else
 			{
-				fprintf(stderr, "ed: illegal option -- %s\n", argv[i] + 1);
+				fprintf(stderr, "ed: illegal option -- %s\n", argv[i] + 2);
 				fprintf(stderr, "usage: ed file\n");
 				exit(1);
 			}
-		}
+		else if (argv[i][0] == '-')
+			for (size_t j = 1; j < strlen(argv[i]); ++j)
+				if (argv[i][j] == 'h')
+					opt_help();
+	
+				else if (argv[i][j] == 'V')
+					opt_version();
+	
+				else if (argv[i][j] == 'G')
+					opt_traditional(p_options);
+	
+				else if (argv[i][j] == 'l')
+					*p_options |= 1U << options_LOOSE_EXIT_STATUS;
+	
+				else if (argv[i][j] == 'p')
+				{
+					*p_options |= 1U << options_PROMPT;
+					if (++i == argc)
+					{
+						fprintf(stderr, "ed: illegal option -- p, trailing STRING needed\n");
+						fprintf(stderr, "usage: ed file\n");
+						exit(1);
+					}
+					strcpy(prompt, argv[i]);
+					break;
+				}
+	
+				else if (argv[i][j] == 'r')
+					*p_options |= 1U << options_RESTRICTED;
+	
+				else if (argv[i][j] == 's')
+					*p_options |= 1U << options_QUIET;
+	
+				else if (argv[i][j] == 'v')
+					*p_options |= 1U << options_VERBOSE;
+	
+				else
+				{
+					fprintf(stderr, "ed: illegal option -- %s\n", argv[i] + 2);
+					fprintf(stderr, "usage: ed file\n");
+					exit(1);
+				}
 		else
 			break;
 	
@@ -188,7 +230,7 @@ void print_last_error(enum error last_error)
 
 void print_error_message(char *options, enum error *last_error)
 {
-	if(*options & (1U << options_VERBOSE))
+	if (*options & (1U << options_VERBOSE))
 	{
 		printf("?\n");
 		print_last_error(*last_error);
@@ -199,13 +241,13 @@ void print_error_message(char *options, enum error *last_error)
 
 
 void
-exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, char **lines, enum error *p_last_error, char *options){
-	
+exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, char **lines, enum error *p_last_error, char *options)
+{
 	int 	address_start =		*p_actual_line;
 	int 	address_end = 		*p_actual_line;
 	char	address_provided = 	0;
 	
-	if(strlen(address) != 0)
+	if (strlen(address) != 0)
 	{
 		char 	first_part[256] = 	"";
 		char 	second_part[256] = 	"";
@@ -228,7 +270,7 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 		strncpy(first_part, address, i);
 		strcpy(second_part, address + i + 1);
 		
-		if(strlen(first_part) != 0 && strlen(second_part) != 0)
+		if (strlen(first_part) != 0 && strlen(second_part) != 0)
 		{
 			if (strlen(first_part) == 1 && first_part[0] == '.')
 				sprintf(first_part, "%d", *p_actual_line);
@@ -244,7 +286,7 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			i = 0;
 			
-			if(first_part[0] == '-')
+			if (first_part[0] == '-')
 				i = 1;
 			
 			for (; i < strlen(first_part); ++i)
@@ -253,7 +295,7 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			i = 0;
 			
-			if(second_part[0] == '-')
+			if (second_part[0] == '-')
 				i = 1;
 			
 			for (; i < strlen(second_part); ++i)
@@ -285,7 +327,7 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			i = 0;
 			
-			if(first_part[0] == '-')
+			if (first_part[0] == '-')
 				i = 1;
 			
 			for (; i < strlen(first_part); ++i)
@@ -297,7 +339,7 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			if (address_start == 0)
 				adress_valid = 0;
 			
-			if(address_start < 0)
+			if (address_start < 0)
 				address_start += *p_n_lines;
 			
 			address_end = address_start;
@@ -305,7 +347,7 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 		else
 			adress_valid = 0;
 		
-		if(address_end > *p_n_lines || address_start > *p_n_lines)
+		if (address_end > *p_n_lines || address_start > *p_n_lines)
 			adress_valid = 0;
 		
 		if (!adress_valid)
@@ -325,13 +367,13 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 		case 'p':
 			
-			if(strlen(command) > 1)
+			if (strlen(command) > 1)
 			{
 				command_suffix = 1;
 				break;
 			}
 	
-			for(; address_start <= address_end; ++address_start)
+			for (; address_start <= address_end; ++address_start)
 				printf("%s", lines[address_start - 1]);
 			
 			break;
@@ -339,13 +381,13 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 		case '\n':
 			
-			if(strlen(command) > 1)
+			if (strlen(command) > 1)
 			{
 				command_suffix = 1;
 				break;
 			}
 			
-			if(++address_start <= *p_n_lines)
+			if (++address_start <= *p_n_lines)
 			{
 				printf("%s", lines[address_start - 1]);
 				++(*p_actual_line);
@@ -361,14 +403,14 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 		case 'H':
 			
-			if(address_provided)
+			if (address_provided)
 			{
 				*p_last_error = error_UNEXPECTED_ADDRESS;
 				print_error_message(options, p_last_error);
 				return;
 			}
 			
-			if(strlen(command) > 1)
+			if (strlen(command) > 1)
 			{
 				command_suffix = 1;
 				break;
@@ -381,7 +423,7 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 		case 'h':
 			
-			if(address_provided)
+			if (address_provided)
 			{
 				*p_last_error = error_UNEXPECTED_ADDRESS;
 				print_error_message(options, p_last_error);
@@ -399,14 +441,14 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 		case 'q':
 			
-			if(address_provided)
+			if (address_provided)
 			{
 				*p_last_error = error_UNEXPECTED_ADDRESS;
 				print_error_message(options, p_last_error);
 				return;
 			}
 			
-			if(strlen(command) > 1)
+			if (strlen(command) > 1)
 			{
 				command_suffix = 1;
 				break;
@@ -421,13 +463,13 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 		case 'n':
 			
-			if(strlen(command) > 1)
+			if (strlen(command) > 1)
 			{
 				command_suffix = 1;
 				break;
 			}
 			
-			for(; address_start <= address_end; ++address_start)
+			for (; address_start <= address_end; ++address_start)
 				printf("%d\t%s", address_start, lines[address_start - 1]);
 			
 			break;
@@ -441,7 +483,7 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			break;
 	}
 	
-	if(command_suffix)
+	if (command_suffix)
 	{
 		*p_last_error = error_INVALID_COMMAND_SUFFIX;
 		print_error_message(options, p_last_error);
@@ -486,7 +528,7 @@ main (int argc, char ** argv)
 		
 		exec_command(command, address, &n_lines, &actual_line, lines, &last_error, &options);
 		
-		if(options & (1U << options_PROMPT))
+		if (options & (1U << options_PROMPT))
 			printf("%s", prompt);
 	}
 	
