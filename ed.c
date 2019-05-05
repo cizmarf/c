@@ -4,6 +4,10 @@
 #include <string.h>
 #include <ctype.h>
 
+/**
+ *	Enum contains all options aliases.
+ *	If more then 8 change enlarge size of options variable.
+ */
 enum options {
 	options_TRADITIONAL,
 	options_LOOSE_EXIT_STATUS,
@@ -13,6 +17,9 @@ enum options {
 	options_VERBOSE
 };
 
+/**
+ *	Enum contains all errors aliases.
+ */ 
 enum error {
 	error_NONE,
 	error_INVALID_ADDRESS,
@@ -21,8 +28,13 @@ enum error {
 	error_INVALID_COMMAND_SUFFIX
 };
 
+/**
+ *	Read file line by line and store each line as element of returned array.
+ * 	The lines array resize automaticly if it is filled while reading file.
+ *	Also store number of lines into n_lines, number of characters into n_chars and options flags into options variable.
+ */ 
 char **
-read_file (const char *arg, int *p_n_lines, int *n_chars, char *p_options)
+read_file (const char *arg, int *p_n_lines, int *p_n_chars, char *p_options)
 {
 	
 	if(*p_options & (1U << options_RESTRICTED))
@@ -56,7 +68,7 @@ read_file (const char *arg, int *p_n_lines, int *n_chars, char *p_options)
 			size_of_lines *= 2;
 		}
 		
-		*n_chars += strlen(line);
+		*p_n_chars += strlen(line);
 		lines[*p_n_lines] = malloc(strlen(line) + 1);
 		strcpy(lines[*p_n_lines], line);
 		++*p_n_lines;
@@ -66,6 +78,9 @@ read_file (const char *arg, int *p_n_lines, int *n_chars, char *p_options)
 	return lines;
 }
 
+/**
+ *	Print help.
+ */
 void
 opt_help()
 {
@@ -80,16 +95,19 @@ opt_help()
 		   "-s, --quiet, --silent      suppress diagnostics, byte counts and '!' prompt\n"
 		   "-v, --verbose              be verbose; equivalent to the 'H' command\n\n"
 		   "Commands:\n"
-		   "(.,.)					   Print the addressed line(s), and sets the current address to the last line printed.\n"
-		   "H						   Toggle the printing of error explanations.\n"
-		   "h 					       Print an explanation of the last error.\n"
-		   "(.,.)n					   Print the addressed lines along with their line numbers.\n"
-		   "(.,.)p					   Print the addressed lines. The current address is set to the last line printed.\n"
-		   "q   				       Quit ed.\n"
+		   "(.,.)                      Print the addressed line(s), and sets the current address to the last line printed.\n"
+		   "H                          Toggle the printing of error explanations.\n"
+		   "h                          Print an explanation of the last error.\n"
+		   "(.,.)n                     Print the addressed lines along with their line numbers.\n"
+		   "(.,.)p                     Print the addressed lines. The current address is set to the last line printed.\n"
+		   "q                          Quit ed.\n"
 		   "Start edit by reading in 'file' if given.\n");
 	exit(0);
 }
 
+/**
+ *	Print version.
+ */
 void
 opt_version()
 {
@@ -100,6 +118,7 @@ opt_version()
 	exit(0);
 }
 
+
 void opt_traditional(char *p_options)
 {
 	printf("Compatibility mode has no effect in current version.\n");
@@ -107,6 +126,11 @@ void opt_traditional(char *p_options)
 }
 
 
+/**
+ *	Function sets appropriate bits of option variable in accordance with the specified options.
+ *	Also it fill prompt variable if nessesery. 
+ *	Function returns position of file name argument.
+ */
 int
 load_options (char *p_options, char *prompt, char ** argv, const int argc)
 {
@@ -200,6 +224,9 @@ load_options (char *p_options, char *prompt, char ** argv, const int argc)
 	return i;
 }
 
+/**
+ *	Print last error according to seted value.
+ */
 void print_last_error(enum error last_error)
 {
 	switch (last_error) {
@@ -239,7 +266,10 @@ void print_error_message(char *options, enum error *last_error)
 		printf("?\n");
 }
 
-
+/**
+ * 	Function process address properly and execute privided command.
+ * 	Also it manipulates with n_lins, actual_line, lines, last_error, options varialbles if command requires.
+ */
 void
 exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, char **lines, enum error *p_last_error, char *options)
 {
@@ -358,15 +388,12 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 		}
 	}
 	
-	
-	
 	*p_actual_line = address_end;
 	char command_suffix = 0;
 	
 	switch (command[0]) {
 			
 		case 'p':
-			
 			if (strlen(command) > 1)
 			{
 				command_suffix = 1;
@@ -380,7 +407,6 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			
 		case '\n':
-			
 			if (strlen(command) > 1)
 			{
 				command_suffix = 1;
@@ -402,7 +428,6 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			
 		case 'H':
-			
 			if (address_provided)
 			{
 				*p_last_error = error_UNEXPECTED_ADDRESS;
@@ -422,7 +447,6 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			
 		case 'h':
-			
 			if (address_provided)
 			{
 				*p_last_error = error_UNEXPECTED_ADDRESS;
@@ -440,7 +464,6 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			
 		case 'q':
-			
 			if (address_provided)
 			{
 				*p_last_error = error_UNEXPECTED_ADDRESS;
@@ -462,7 +485,6 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			
 		case 'n':
-			
 			if (strlen(command) > 1)
 			{
 				command_suffix = 1;
@@ -476,7 +498,6 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			
 		default:
-			
 			*p_last_error = error_UNKNOWN_COMMAND;
 			print_error_message(options, p_last_error);
 			return;
