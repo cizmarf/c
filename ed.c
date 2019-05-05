@@ -184,7 +184,7 @@ load_options (char *p_options, char *prompt, char ** argv, const int argc)
 	
 				else
 				{
-					fprintf(stderr, "ed: illegal option -- %s\n", argv[i] + 2);
+					fprintf(stderr, "ed: illegal option -- %s\n", argv[i] + 1);
 					fprintf(stderr, "usage: ed file\n");
 					exit(1);
 				}
