@@ -6,7 +6,7 @@
 
 /**
  *	Enum contains all options aliases.
- *	If more then 8 change enlarge size of options variable.
+ *	If more then 8 enlarge size of options variable.
  */
 enum options {
 	options_TRADITIONAL,
@@ -29,9 +29,9 @@ enum error {
 };
 
 /**
- *	Read file line by line and store each line as element of returned array.
+ *	Function reads file line by line and stores each line as element of returned array.
  * 	The lines array resize automaticly if it is filled while reading file.
- *	Also store number of lines into n_lines, number of characters into n_chars and options flags into options variable.
+ *	Also it stores numbers of lines into n_lines, numbers of characters into n_chars.
  */ 
 char **
 read_file (const char *arg, int *p_n_lines, int *p_n_chars, char *p_options)
@@ -127,8 +127,8 @@ void opt_traditional(char *p_options)
 
 
 /**
- *	Function sets appropriate bits of option variable in accordance with the specified options.
- *	Also it fill prompt variable if nessesery. 
+ *	Function sets appropriate bits of options variable in accordance with the specified command line options.
+ *	Also it fills prompt variable if necessary.
  *	Function returns position of file name argument.
  */
 int
@@ -225,7 +225,7 @@ load_options (char *p_options, char *prompt, char ** argv, const int argc)
 }
 
 /**
- *	Print last error according to seted value.
+ *	Function prints last error according to seted value.
  */
 void print_last_error(enum error last_error)
 {
@@ -267,7 +267,7 @@ void print_error_message(char *options, enum error *last_error)
 }
 
 /**
- * 	Function process address properly and execute privided command.
+ * 	Function processes address properly and execute provided command.
  * 	Also it manipulates with n_lins, actual_line, lines, last_error, options varialbles if command requires.
  */
 void
