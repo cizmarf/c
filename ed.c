@@ -1,3 +1,11 @@
+//
+//  ed.c
+//  ed
+//
+//  Created by Filip Čižmář on 12/05/2019.
+//  Copyright © 2019 Filip Čižmář. All rights reserved.
+//
+
 #include <stdio.h>
 #include <err.h>
 #include <stdlib.h>
