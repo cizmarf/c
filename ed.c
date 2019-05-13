@@ -431,7 +431,7 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			if (++address_start <= *p_n_lines)
 			{
 				printf("%s", lines[address_start - 1]);
-				++(*p_actual_line);
+				++(address_end);
 			}
 			else
 			{
