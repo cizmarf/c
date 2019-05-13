@@ -404,7 +404,6 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 		}
 	}
 	
-	*p_actual_line = address_end;
 	char command_suffix = 0;
 	
 	switch (command[0]) {
@@ -519,6 +518,8 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			return;
 			break;
 	}
+	
+	*p_actual_line = address_end;
 	
 	if (command_suffix)
 	{
