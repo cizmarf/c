@@ -308,6 +308,10 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 		strncpy(first_part, address, i);
 		strcpy(second_part, address + i + 1);
 		
+		
+		/**
+		 *	Two parts of address specified
+		 */
 		if (strlen(first_part) != 0 && strlen(second_part) != 0)
 		{
 			if (strlen(first_part) == 1 && first_part[0] == '.')
@@ -351,10 +355,14 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			if (address_start < 0 && address_end < 0)
 			{
-				address_start +=	*p_n_lines;
-				address_end +=		*p_n_lines;
+				address_start +=	*p_actual_line;
+				address_end +=		*p_actual_line;
 			}
 		}
+		
+		/**
+		 *	Only one address specified
+		 */
 		else if (strlen(first_part) != 0)
 		{
 			if (strlen(first_part) == 1 && first_part[0] == '.')
@@ -385,7 +393,7 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 		else
 			adress_valid = 0;
 		
-		if (address_end > *p_n_lines || address_start > *p_n_lines)
+		if (address_end > *p_n_lines || address_start > *p_n_lines || address_start <= 0 || address_end <= 0)
 			adress_valid = 0;
 		
 		if (!adress_valid)
