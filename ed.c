@@ -13,8 +13,8 @@
 #include <ctype.h>
 
 /**
- *	Enum contains all options aliases.
- *	If more then 8 enlarge size of options variable.
+ * Enum contains all options aliases.
+ * If more then 8 enlarge size of options variable.
  */
 enum options {
 	options_TRADITIONAL,
@@ -26,7 +26,7 @@ enum options {
 };
 
 /**
- *	Enum contains all errors aliases.
+ * Enum contains all errors aliases.
  */ 
 enum error {
 	error_NONE,
@@ -37,17 +37,18 @@ enum error {
 };
 
 /**
- *	Function reads file line by line and stores each line as element of returned array.
- * 	The lines array resize automaticly if it is filled while reading file.
- *	Also it stores numbers of lines into n_lines, numbers of characters into n_chars.
+ * Function reads file line by line and stores each line as element of returned
+ * array.
+ * The lines array resize automaticly if it is filled while reading file.
+ * Also it stores numbers of lines into n_lines, numbers of characters into
+ * n_chars.
  */ 
-char **
+static char **
 read_file (const char *arg, int *p_n_lines, int *p_n_chars, char *p_options)
 {
 	
-	if(*p_options & (1U << options_RESTRICTED))
-		if(strstr(arg, "/"))
-		{
+	if (*p_options & (1U << options_RESTRICTED))
+		if (strstr(arg, "/")) {
 			fprintf(stderr, "%s: No such file or directory\n", arg);
 			return NULL;
 		}
@@ -55,8 +56,7 @@ read_file (const char *arg, int *p_n_lines, int *p_n_chars, char *p_options)
 	FILE *fp;
 	fp = fopen(arg, "r"); // read mode
 	
-	if (fp == NULL)
-	{
+	if (fp == NULL) {
 		perror(arg);
 		return NULL;
 	}
@@ -65,10 +65,8 @@ read_file (const char *arg, int *p_n_lines, int *p_n_chars, char *p_options)
 	int size_of_lines = 1;
 	char line[1024];
 	
-	while (fgets ( line, sizeof line, fp ) != NULL)
-	{
-		if (*p_n_lines == size_of_lines)
-		{
+	while (fgets ( line, sizeof line, fp ) != NULL) {
+		if (*p_n_lines == size_of_lines) {
 			char **plines = malloc(sizeof(char *) * size_of_lines * 2);
 			memcpy(plines, lines, sizeof(char *) * *p_n_lines);
 			free(lines);
@@ -87,9 +85,9 @@ read_file (const char *arg, int *p_n_lines, int *p_n_chars, char *p_options)
 }
 
 /**
- *	Print help.
+ * Print help.
  */
-void
+static void
 opt_help()
 {
 	printf("Usage: ed [options] [file]\n"
@@ -114,9 +112,9 @@ opt_help()
 }
 
 /**
- *	Print version.
+ * Print version.
  */
-void
+static void
 opt_version()
 {
 	printf("ed 1.00.0\n"
@@ -127,7 +125,8 @@ opt_version()
 }
 
 
-void opt_traditional(char *p_options)
+static void
+opt_traditional(char *p_options)
 {
 	printf("Compatibility mode has no effect in current version.\n");
 	*p_options |= 1U << options_TRADITIONAL;
@@ -135,11 +134,12 @@ void opt_traditional(char *p_options)
 
 
 /**
- *	Function sets appropriate bits of options variable in accordance with the specified command line options.
- *	Also it fills prompt variable if necessary.
- *	Function returns position of file name argument.
+ * Function sets appropriate bits of options variable in accordance with the
+ * specified command line options.
+ * Also it fills prompt variable if necessary.
+ * Function returns position of file name argument.
  */
-int
+static int
 load_options (char *p_options, char *prompt, char ** argv, const int argc)
 {
 	int i;
@@ -157,8 +157,7 @@ load_options (char *p_options, char *prompt, char ** argv, const int argc)
 			else if (!strcmp(argv[i], "--loose-exit-status"))
 				*p_options |= 1U << options_LOOSE_EXIT_STATUS;
 			
-			else if (!strncmp(argv[i], "--prompt=", strlen("--prompt=")))
-			{
+			else if (!strncmp(argv[i], "--prompt=", strlen("--prompt="))) {
 				*p_options |= 1U << options_PROMPT;
 				strcpy(prompt, argv[i] + strlen("--prompt="));
 			}
@@ -172,12 +171,12 @@ load_options (char *p_options, char *prompt, char ** argv, const int argc)
 			else if (!strcmp(argv[i], "--verbose"))
 				*p_options |= 1U << options_VERBOSE;
 			
-			else
-			{
+			else {
 				fprintf(stderr, "ed: illegal option -- %s\n", argv[i] + 2);
 				fprintf(stderr, "usage: ed file\n");
 				exit(1);
 			}
+	
 		else if (argv[i][0] == '-')
 			for (size_t j = 1; j < strlen(argv[i]); ++j)
 				if (argv[i][j] == 'h')
@@ -192,11 +191,9 @@ load_options (char *p_options, char *prompt, char ** argv, const int argc)
 				else if (argv[i][j] == 'l')
 					*p_options |= 1U << options_LOOSE_EXIT_STATUS;
 	
-				else if (argv[i][j] == 'p')
-				{
+				else if (argv[i][j] == 'p') {
 					*p_options |= 1U << options_PROMPT;
-					if (++i == argc)
-					{
+					if (++i == argc) {
 						fprintf(stderr, "ed: illegal option -- p, trailing STRING needed\n");
 						fprintf(stderr, "usage: ed file\n");
 						exit(1);
@@ -214,8 +211,7 @@ load_options (char *p_options, char *prompt, char ** argv, const int argc)
 				else if (argv[i][j] == 'v')
 					*p_options |= 1U << options_VERBOSE;
 	
-				else
-				{
+				else {
 					fprintf(stderr, "ed: illegal option -- %s\n", argv[i] + 1);
 					fprintf(stderr, "usage: ed file\n");
 					exit(1);
@@ -223,8 +219,7 @@ load_options (char *p_options, char *prompt, char ** argv, const int argc)
 		else
 			break;
 	
-	if (i == argc)
-	{
+	if (i == argc) {
 		fprintf(stderr, "usage: ed file\n");
 		exit(1);
 	}
@@ -233,9 +228,10 @@ load_options (char *p_options, char *prompt, char ** argv, const int argc)
 }
 
 /**
- *	Function prints last error according to seted value.
+ * Function prints last error according to seted value.
  */
-void print_last_error(enum error last_error)
+static void
+print_last_error(enum error last_error)
 {
 	switch (last_error) {
 			
@@ -263,30 +259,38 @@ void print_last_error(enum error last_error)
 	}
 }
 
-void print_error_message(char *options, enum error *last_error)
+static void
+print_error_message(char *options, enum error *last_error)
 {
-	if (*options & (1U << options_VERBOSE))
-	{
+	if (*options & (1U << options_VERBOSE)) {
 		printf("?\n");
 		print_last_error(*last_error);
 	}
-	else
+	else {
 		printf("?\n");
+	}
 }
 
 /**
- * 	Function processes address properly and execute provided command.
- * 	Also it manipulates with n_lins, actual_line, lines, last_error, options varialbles if command requires.
+ * Function processes address properly and execute provided command.
+ * Also it manipulates with n_lins, actual_line, lines, last_error, options
+ * varialbles if command requires.
  */
-void
-exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, char **lines, enum error *p_last_error, char *options)
+static void
+exec_command(
+			 char		*command,
+			 char		*address,
+			 int		*p_n_lines,
+			 int		*p_actual_line,
+			 char		**lines,
+			 enum error	*p_last_error,
+			 char		*options)
 {
 	int 	address_start =		*p_actual_line;
 	int 	address_end = 		*p_actual_line;
 	char	address_provided = 	0;
 	
-	if (strlen(address) != 0)
-	{
+	if (strlen(address) != 0) {
 		char 	first_part[256] = 	"";
 		char 	second_part[256] = 	"";
 		size_t	i = 				0;
@@ -298,8 +302,10 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			if (address[i] == ',')
 				break;
 		
-		if (i == strlen(address) - 1 || i == 0) // carka bez jedne adresy
-		{
+		/**
+		 * If missing one field of address
+		 */
+		if (i == strlen(address) - 1 || i == 0) {
 			*p_last_error = error_INVALID_ADDRESS;
 			print_error_message(options, p_last_error);
 			return;
@@ -308,12 +314,10 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 		strncpy(first_part, address, i);
 		strcpy(second_part, address + i + 1);
 		
-		
-		/**
-		 *	Two parts of address specified
+		/*
+		 * Both address fields specified
 		 */
-		if (strlen(first_part) != 0 && strlen(second_part) != 0)
-		{
+		if (strlen(first_part) != 0 && strlen(second_part) != 0) {
 			if (strlen(first_part) == 1 && first_part[0] == '.')
 				sprintf(first_part, "%d", *p_actual_line);
 			
@@ -353,18 +357,16 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			if (address_start > address_end || address_start * address_end < 0)
 				adress_valid = 0;
 			
-			if (address_start < 0 && address_end < 0)
-			{
+			if (address_start < 0 && address_end < 0) {
 				address_start +=	*p_actual_line;
 				address_end +=		*p_actual_line;
 			}
 		}
 		
-		/**
-		 *	Only one address specified
+		/*
+		 * Only one address field specified
 		 */
-		else if (strlen(first_part) != 0)
-		{
+		else if (strlen(first_part) != 0) {
 			if (strlen(first_part) == 1 && first_part[0] == '.')
 				sprintf(first_part, "%d", *p_actual_line);
 			
@@ -386,18 +388,18 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 				adress_valid = 0;
 			
 			if (address_start < 0)
-				address_start += *p_n_lines;
+				address_start += *p_actual_line;
 			
 			address_end = address_start;
 		}
 		else
 			adress_valid = 0;
 		
-		if (address_end > *p_n_lines || address_start > *p_n_lines || address_start <= 0 || address_end <= 0)
+		if (address_end > *p_n_lines ||	address_start > *p_n_lines ||
+			address_start <= 0 || address_end <= 0)
 			adress_valid = 0;
 		
-		if (!adress_valid)
-		{
+		if (!adress_valid) {
 			*p_last_error = error_INVALID_ADDRESS;
 			print_error_message(options, p_last_error);
 			return;
@@ -407,12 +409,17 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 	char command_suffix = 0;
 	
 	switch (command[0]) {
-			
 		case 'p':
-			if (strlen(command) > 1)
-			{
+			if (strlen(command) > 1) {
 				command_suffix = 1;
 				break;
+			}
+			
+			if (*p_actual_line == 0)
+			{
+				*p_last_error = error_INVALID_ADDRESS;
+				print_error_message(options, p_last_error);
+				return;
 			}
 	
 			for (; address_start <= address_end; ++address_start)
@@ -422,14 +429,12 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			
 		case '\n':
-			if (strlen(command) > 1)
-			{
+			if (strlen(command) > 1) {
 				command_suffix = 1;
 				break;
 			}
 			
-			if (++address_start <= *p_n_lines)
-			{
+			if (++address_start <= *p_n_lines) {
 				printf("%s", lines[address_start - 1]);
 				++(address_end);
 			}
@@ -443,15 +448,13 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			
 		case 'H':
-			if (address_provided)
-			{
+			if (address_provided) {
 				*p_last_error = error_UNEXPECTED_ADDRESS;
 				print_error_message(options, p_last_error);
 				return;
 			}
 			
-			if (strlen(command) > 1)
-			{
+			if (strlen(command) > 1) {
 				command_suffix = 1;
 				break;
 			}
@@ -462,14 +465,13 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			
 		case 'h':
-			if (address_provided)
-			{
+			if (address_provided) {
 				*p_last_error = error_UNEXPECTED_ADDRESS;
 				print_error_message(options, p_last_error);
 				return;
 			}
-			if(strlen(command) > 1)
-			{
+			
+			if (strlen(command) > 1) {
 				command_suffix = 1;
 				break;
 			}
@@ -479,20 +481,19 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			
 		case 'q':
-			if (address_provided)
-			{
+			if (address_provided) {
 				*p_last_error = error_UNEXPECTED_ADDRESS;
 				print_error_message(options, p_last_error);
 				return;
 			}
 			
-			if (strlen(command) > 1)
-			{
+			if (strlen(command) > 1) {
 				command_suffix = 1;
 				break;
 			}
 			
-			if (*options & (1U << options_LOOSE_EXIT_STATUS) || *p_last_error == error_NONE)
+			if (*options & (1U << options_LOOSE_EXIT_STATUS) ||
+				*p_last_error == error_NONE)
 				exit(0);
 			
 			exit(1);
@@ -500,10 +501,16 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 			
 			
 		case 'n':
-			if (strlen(command) > 1)
-			{
+			if (strlen(command) > 1) {
 				command_suffix = 1;
 				break;
+			}
+			
+			if (*p_actual_line == 0)
+			{
+				*p_last_error = error_INVALID_ADDRESS;
+				print_error_message(options, p_last_error);
+				return;
 			}
 			
 			for (; address_start <= address_end; ++address_start)
@@ -521,8 +528,7 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 	
 	*p_actual_line = address_end;
 	
-	if (command_suffix)
-	{
+	if (command_suffix) {
 		*p_last_error = error_INVALID_COMMAND_SUFFIX;
 		print_error_message(options, p_last_error);
 	}
@@ -531,28 +537,29 @@ exec_command(char *command, char *address, int *p_n_lines, int *p_actual_line, c
 int
 main (int argc, char ** argv)
 {
-	char		options =			0;
-	char 		prompt[256] =		"";
-	int 		n_lines =			0;
-	int 		n_chars =			0;
-	char 		**lines =			read_file(argv[ load_options(&options, prompt, argv, argc) ], &n_lines, &n_chars, &options);
-	int 		actual_line =		n_lines;
-	char 		input[256] = 		"";
-	enum error 	last_error = 		error_NONE;
+	char		options =		0;
+	char 		prompt[256] =	"";
+	int 		n_lines =		0;
+	int 		n_chars =		0;
+	char 		**lines =		read_file(argv[ load_options(&options, prompt, argv, argc) ],
+										  &n_lines, &n_chars, &options);
+	int 		actual_line =	n_lines;
+	char 		input[256] = 	"";
+	enum error 	last_error = 	error_NONE;
 	
-	if(lines && !(options & (1U << options_QUIET)))
+	if (lines && !(options & (1U << options_QUIET)))
 		printf("%d\n", n_chars);
 	
-	if(options & (1U << options_PROMPT))
+	if (options & (1U << options_PROMPT))
 	   printf("%s", prompt);
 	
-	while (fgets(input, sizeof(input), stdin))
-	{
+	while (fgets(input, sizeof(input), stdin)) {
 		strtok(input, "\n");
 		size_t i;
 		
 		for (i = 0; i < strlen(input); ++i)
-			if ((input[i] > 'a' && input[i] < 'z') || (input[i] > 'A' && input[i] < 'Z') || input[i] == '\n')
+			if ((input[i] > 'a' && input[i] < 'z') ||
+				(input[i] > 'A' && input[i] < 'Z') || input[i] == '\n')
 				break;
 				
 		char command[256] = 	"";
@@ -564,7 +571,8 @@ main (int argc, char ** argv)
 		if (strlen(command) == 0)
 			command[0] = 'p';
 		
-		exec_command(command, address, &n_lines, &actual_line, lines, &last_error, &options);
+		exec_command(command, address, &n_lines, &actual_line, lines,
+					 &last_error, &options);
 		
 		if (options & (1U << options_PROMPT))
 			printf("%s", prompt);
