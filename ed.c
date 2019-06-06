@@ -1,29 +1,10 @@
-//
-//  ed.c
-//  ed
-//
-//  Created by Filip Čižmář on 12/05/2019.
-//  Copyright © 2019 Filip Čižmář. All rights reserved.
-//
-
+//test
+#include <sys/queue.h>
 #include <stdio.h>
 #include <err.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
-/**
- * Enum contains all options aliases.
- * If more then 8 enlarge size of options variable.
- */
-enum options {
-	options_TRADITIONAL,
-	options_LOOSE_EXIT_STATUS,
-	options_PROMPT,
-	options_RESTRICTED,
-	options_QUIET,
-	options_VERBOSE
-};
 
 /**
  * Enum contains all errors aliases.
@@ -36,6 +17,14 @@ enum error {
 	error_INVALID_COMMAND_SUFFIX
 };
 
+typedef struct _Line {
+	TAILQ_ENTRY(_Line) pointers;
+	char content[1024];
+} Line;
+
+TAILQ_HEAD(lines_q, _Line) lines;
+
+
 /**
  * Function reads file line by line and stores each line as element of returned
  * array.
@@ -43,189 +32,32 @@ enum error {
  * Also it stores numbers of lines into n_lines, numbers of characters into
  * n_chars.
  */ 
-static char **
-read_file (const char *arg, int *p_n_lines, int *p_n_chars, char *p_options)
+static void
+read_file (const char *arg, int *p_n_lines, int *p_n_chars)
 {
-	
-	if (*p_options & (1U << options_RESTRICTED))
-		if (strstr(arg, "/")) {
-			fprintf(stderr, "%s: No such file or directory\n", arg);
-			return NULL;
-		}
-	
+	TAILQ_INIT(&lines);
 	FILE *fp;
-	fp = fopen(arg, "r"); // read mode
+	fp = fopen(arg, "r");
 	
 	if (fp == NULL) {
 		perror(arg);
-		return NULL;
+		return;
 	}
 	
-	char **lines = malloc(sizeof(char *));
-	int size_of_lines = 1;
 	char line[1024];
 	
-	while (fgets ( line, sizeof line, fp ) != NULL) {
-		if (*p_n_lines == size_of_lines) {
-			char **plines = malloc(sizeof(char *) * size_of_lines * 2);
-			memcpy(plines, lines, sizeof(char *) * *p_n_lines);
-			free(lines);
-			lines = plines;
-			size_of_lines *= 2;
-		}
-		
+	while (fgets ( line, sizeof(line), fp ) != NULL) {
+		Line * nl = malloc(sizeof(Line));
+		strcpy(nl->content, line);
+		TAILQ_INSERT_TAIL(&lines, nl, pointers);
 		*p_n_chars += strlen(line);
-		lines[*p_n_lines] = malloc(strlen(line) + 1);
-		strcpy(lines[*p_n_lines], line);
 		++*p_n_lines;
 	}
 	
 	fclose(fp);
-	return lines;
+	return;
 }
 
-/**
- * Print help.
- */
-static void
-opt_help()
-{
-	printf("Usage: ed [options] [file]\n"
-		   "Options:\n"
-		   "-h, --help                 display this help and exit\n"
-		   "-V, --version              output version information and exitn\n"
-		   "-G, --traditional          run in compatibility mode\n"
-		   "-l, --loose-exit-status    exit with 0 status even if a command fails\n"
-		   "-p, --prompt=STRING        use STRING as an interactive prompt\n"
-		   "-r, --restricted           run in restricted mode\n"
-		   "-s, --quiet, --silent      suppress diagnostics, byte counts and '!' prompt\n"
-		   "-v, --verbose              be verbose; equivalent to the 'H' command\n\n"
-		   "Commands:\n"
-		   "(.,.)                      Print the addressed line(s), and sets the current address to the last line printed.\n"
-		   "H                          Toggle the printing of error explanations.\n"
-		   "h                          Print an explanation of the last error.\n"
-		   "(.,.)n                     Print the addressed lines along with their line numbers.\n"
-		   "(.,.)p                     Print the addressed lines. The current address is set to the last line printed.\n"
-		   "q                          Quit ed.\n"
-		   "Start edit by reading in 'file' if given.\n");
-	exit(0);
-}
-
-/**
- * Print version.
- */
-static void
-opt_version()
-{
-	printf("ed 1.00.0\n"
-		   "Copyright (C) 2019 Filip Cizmar.\n"
-		   "This is free software: you are free to change and redistribute it.\n"
-		   "There is NO WARRANTY, to the extent permitted by law.\n");
-	exit(0);
-}
-
-
-static void
-opt_traditional(char *p_options)
-{
-	printf("Compatibility mode has no effect in current version.\n");
-	*p_options |= 1U << options_TRADITIONAL;
-}
-
-
-/**
- * Function sets appropriate bits of options variable in accordance with the
- * specified command line options.
- * Also it fills prompt variable if necessary.
- * Function returns position of file name argument.
- */
-static int
-load_options (char *p_options, char *prompt, char ** argv, const int argc)
-{
-	int i;
-	for (i = 1 ; i < argc; ++i)
-		if (argv[i][0] == '-' && argv[i][1] == '-')
-			if (!strcmp(argv[i], "--help"))
-				opt_help();
-			
-			else if (!strcmp(argv[i], "--version"))
-				opt_version();
-			
-			else if (!strcmp(argv[i], "--traditional"))
-				opt_traditional(p_options);
-			
-			else if (!strcmp(argv[i], "--loose-exit-status"))
-				*p_options |= 1U << options_LOOSE_EXIT_STATUS;
-			
-			else if (!strncmp(argv[i], "--prompt=", strlen("--prompt="))) {
-				*p_options |= 1U << options_PROMPT;
-				strcpy(prompt, argv[i] + strlen("--prompt="));
-			}
-			
-			else if (!strcmp(argv[i], "--restricted"))
-				*p_options |= 1U << options_RESTRICTED;
-			
-			else if (!strcmp(argv[i], "--quiet") || !strcmp(argv[i], "--silent"))
-				*p_options |= 1U << options_QUIET;
-			
-			else if (!strcmp(argv[i], "--verbose"))
-				*p_options |= 1U << options_VERBOSE;
-			
-			else {
-				fprintf(stderr, "ed: illegal option -- %s\n", argv[i] + 2);
-				fprintf(stderr, "usage: ed file\n");
-				exit(1);
-			}
-	
-		else if (argv[i][0] == '-')
-			for (size_t j = 1; j < strlen(argv[i]); ++j)
-				if (argv[i][j] == 'h')
-					opt_help();
-	
-				else if (argv[i][j] == 'V')
-					opt_version();
-	
-				else if (argv[i][j] == 'G')
-					opt_traditional(p_options);
-	
-				else if (argv[i][j] == 'l')
-					*p_options |= 1U << options_LOOSE_EXIT_STATUS;
-	
-				else if (argv[i][j] == 'p') {
-					*p_options |= 1U << options_PROMPT;
-					if (++i == argc) {
-						fprintf(stderr, "ed: illegal option -- p, trailing STRING needed\n");
-						fprintf(stderr, "usage: ed file\n");
-						exit(1);
-					}
-					strcpy(prompt, argv[i]);
-					break;
-				}
-	
-				else if (argv[i][j] == 'r')
-					*p_options |= 1U << options_RESTRICTED;
-	
-				else if (argv[i][j] == 's')
-					*p_options |= 1U << options_QUIET;
-	
-				else if (argv[i][j] == 'v')
-					*p_options |= 1U << options_VERBOSE;
-	
-				else {
-					fprintf(stderr, "ed: illegal option -- %s\n", argv[i] + 1);
-					fprintf(stderr, "usage: ed file\n");
-					exit(1);
-				}
-		else
-			break;
-	
-	if (i == argc) {
-		fprintf(stderr, "usage: ed file\n");
-		exit(1);
-	}
-	
-	return i;
-}
 
 /**
  * Function prints last error according to seted value.
@@ -260,16 +92,11 @@ print_last_error(enum error last_error)
 }
 
 static void
-print_error_message(char *options, enum error *last_error)
+print_error_message()
 {
-	if (*options & (1U << options_VERBOSE)) {
-		printf("?\n");
-		print_last_error(*last_error);
-	}
-	else {
-		printf("?\n");
-	}
+	printf("?\n");
 }
+
 
 /**
  * Function processes address properly and execute provided command.
@@ -278,16 +105,15 @@ print_error_message(char *options, enum error *last_error)
  */
 static void
 exec_command(
-			 char		*command,
-			 char		*address,
-			 int		*p_n_lines,
-			 int		*p_actual_line,
-			 char		**lines,
-			 enum error	*p_last_error,
-			 char		*options)
+			 char			*command,
+			 char			*address,
+			 int			*p_n_lines,
+			 struct _Line 	**p_actual_line,
+			 int			*p_no_act_line,
+			 enum error		*p_last_error)
 {
-	int 	address_start =		*p_actual_line;
-	int 	address_end = 		*p_actual_line;
+	int 	address_start =		*p_no_act_line;
+	int 	address_end = 		*p_no_act_line;
 	char	address_provided = 	0;
 	
 	if (strlen(address) != 0) {
@@ -307,7 +133,7 @@ exec_command(
 		 */
 		if (i == strlen(address) - 1 || i == 0) {
 			*p_last_error = error_INVALID_ADDRESS;
-			print_error_message(options, p_last_error);
+			print_error_message();
 			return;
 		}
 		
@@ -319,13 +145,13 @@ exec_command(
 		 */
 		if (strlen(first_part) != 0 && strlen(second_part) != 0) {
 			if (strlen(first_part) == 1 && first_part[0] == '.')
-				sprintf(first_part, "%d", *p_actual_line);
+				sprintf(first_part, "%d", *p_no_act_line);
 			
 			if (strlen(first_part) == 1 && first_part[0] == '$')
 				sprintf(first_part, "%d", *p_n_lines);
 			
 			if (strlen(second_part) == 1 && second_part[0] == '.')
-				sprintf(second_part, "%d", *p_actual_line);
+				sprintf(second_part, "%d", *p_no_act_line);
 			
 			if (strlen(second_part) == 1 && second_part[0] == '$')
 				sprintf(second_part, "%d", *p_n_lines);
@@ -358,8 +184,8 @@ exec_command(
 				adress_valid = 0;
 			
 			if (address_start < 0 && address_end < 0) {
-				address_start +=	*p_actual_line;
-				address_end +=		*p_actual_line;
+				address_start +=	*p_no_act_line;
+				address_end +=		*p_no_act_line;
 			}
 		}
 		
@@ -368,7 +194,7 @@ exec_command(
 		 */
 		else if (strlen(first_part) != 0) {
 			if (strlen(first_part) == 1 && first_part[0] == '.')
-				sprintf(first_part, "%d", *p_actual_line);
+				sprintf(first_part, "%d", *p_no_act_line);
 			
 			if (strlen(first_part) == 1 && first_part[0] == '$')
 				sprintf(first_part, "%d", *p_n_lines);
@@ -388,7 +214,7 @@ exec_command(
 				adress_valid = 0;
 			
 			if (address_start < 0)
-				address_start += *p_actual_line;
+				address_start += *p_no_act_line;
 			
 			address_end = address_start;
 		}
@@ -401,12 +227,23 @@ exec_command(
 		
 		if (!adress_valid) {
 			*p_last_error = error_INVALID_ADDRESS;
-			print_error_message(options, p_last_error);
+			print_error_message();
 			return;
 		}
 	}
 	
 	char command_suffix = 0;
+	
+	if (*p_no_act_line > address_start) {
+		for (int i = 0; i < *p_no_act_line - address_start; ++i) {
+			*p_actual_line = TAILQ_PREV((*p_actual_line), lines_q, pointers);
+		}
+	}
+	else if (*p_no_act_line < address_start) {
+		for (int i = 0; i < address_start - *p_no_act_line; ++i) {
+			*p_actual_line = TAILQ_NEXT((*p_actual_line), pointers);
+		}
+	}
 	
 	switch (command[0]) {
 		case 'p':
@@ -415,15 +252,19 @@ exec_command(
 				break;
 			}
 			
-			if (*p_actual_line == 0)
+			if (*p_no_act_line == 0)
 			{
 				*p_last_error = error_INVALID_ADDRESS;
-				print_error_message(options, p_last_error);
+				print_error_message();
 				return;
 			}
 	
-			for (; address_start <= address_end; ++address_start)
-				printf("%s", lines[address_start - 1]);
+			for (; address_start < address_end; ++address_start) {
+				printf("%s", (*p_actual_line)->content);
+				*p_actual_line = TAILQ_NEXT((*p_actual_line), pointers);
+			}
+			printf("%s", (*p_actual_line)->content);
+			++address_start;
 			
 			break;
 			
@@ -434,14 +275,15 @@ exec_command(
 				break;
 			}
 			
-			if (++address_start <= *p_n_lines) {
-				printf("%s", lines[address_start - 1]);
+			if (++address_start < *p_n_lines) {
+				*p_actual_line = TAILQ_NEXT((*p_actual_line), pointers);
+				printf("%s", (*p_actual_line)->content);
 				++(address_end);
 			}
 			else
 			{
 				*p_last_error = error_INVALID_ADDRESS;
-				print_error_message(options, p_last_error);
+				print_error_message();
 				return;
 			}
 			break;
@@ -450,7 +292,7 @@ exec_command(
 		case 'H':
 			if (address_provided) {
 				*p_last_error = error_UNEXPECTED_ADDRESS;
-				print_error_message(options, p_last_error);
+				print_error_message();
 				return;
 			}
 			
@@ -459,7 +301,6 @@ exec_command(
 				break;
 			}
 			
-			*options ^= 1U << options_VERBOSE;
 			print_last_error(*p_last_error);
 			break;
 			
@@ -467,7 +308,7 @@ exec_command(
 		case 'h':
 			if (address_provided) {
 				*p_last_error = error_UNEXPECTED_ADDRESS;
-				print_error_message(options, p_last_error);
+				print_error_message();
 				return;
 			}
 			
@@ -483,7 +324,7 @@ exec_command(
 		case 'q':
 			if (address_provided) {
 				*p_last_error = error_UNEXPECTED_ADDRESS;
-				print_error_message(options, p_last_error);
+				print_error_message();
 				return;
 			}
 			
@@ -491,10 +332,6 @@ exec_command(
 				command_suffix = 1;
 				break;
 			}
-			
-			if (*options & (1U << options_LOOSE_EXIT_STATUS) ||
-				*p_last_error == error_NONE)
-				exit(0);
 			
 			exit(1);
 			break;
@@ -506,52 +343,53 @@ exec_command(
 				break;
 			}
 			
-			if (*p_actual_line == 0)
+			if (*p_no_act_line == 0)
 			{
 				*p_last_error = error_INVALID_ADDRESS;
-				print_error_message(options, p_last_error);
+				print_error_message();
 				return;
 			}
 			
-			for (; address_start <= address_end; ++address_start)
-				printf("%d\t%s", address_start, lines[address_start - 1]);
+			for (; address_start < address_end; ++address_start) {
+				printf("%d\t%s", address_start, (*p_actual_line)->content);
+				*p_actual_line = TAILQ_NEXT((*p_actual_line), pointers);
+			}
+			printf("%s", (*p_actual_line)->content);
+			++address_start;
 			
 			break;
 			
 			
 		default:
 			*p_last_error = error_UNKNOWN_COMMAND;
-			print_error_message(options, p_last_error);
+			print_error_message();
 			return;
 			break;
 	}
 	
-	*p_actual_line = address_end;
+	*p_no_act_line = address_end;
 	
 	if (command_suffix) {
 		*p_last_error = error_INVALID_COMMAND_SUFFIX;
-		print_error_message(options, p_last_error);
+		print_error_message();
 	}
 }
 
 int
 main (int argc, char ** argv)
 {
-	char		options =		0;
-	char 		prompt[256] =	"";
-	int 		n_lines =		0;
-	int 		n_chars =		0;
-	char 		**lines =		read_file(argv[ load_options(&options, prompt, argv, argc) ],
-										  &n_lines, &n_chars, &options);
-	int 		actual_line =	n_lines;
-	char 		input[256] = 	"";
-	enum error 	last_error = 	error_NONE;
+	int 	n_lines =		0;
+	int 	n_chars =		0;
+	char 	input[256] = 	"";
 	
-	if (lines && !(options & (1U << options_QUIET)))
+	read_file(argv[1], &n_lines, &n_chars);
+	
+	enum error 		last_error = 	error_NONE;
+	struct _Line *	actual_line =	TAILQ_LAST(&lines, lines_q);
+	int				no_act_line =	n_lines;
+	
+	if (!TAILQ_EMPTY(&lines))
 		printf("%d\n", n_chars);
-	
-	if (options & (1U << options_PROMPT))
-	   printf("%s", prompt);
 	
 	while (fgets(input, sizeof(input), stdin)) {
 		strtok(input, "\n");
@@ -571,15 +409,8 @@ main (int argc, char ** argv)
 		if (strlen(command) == 0)
 			command[0] = 'p';
 		
-		exec_command(command, address, &n_lines, &actual_line, lines,
-					 &last_error, &options);
-		
-		if (options & (1U << options_PROMPT))
-			printf("%s", prompt);
+		exec_command(command, address, &n_lines, &actual_line, &no_act_line, &last_error);
 	}
-	
-	if (options & (1U << options_LOOSE_EXIT_STATUS) || last_error == error_NONE)
-		return 0;
 	
 	return 1;
 }
