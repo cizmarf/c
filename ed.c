@@ -1,4 +1,3 @@
-//test
 #include <sys/queue.h>
 #include <stdio.h>
 #include <err.h>
@@ -411,6 +410,8 @@ main (int argc, char ** argv)
 		
 		exec_command(command, address, &n_lines, &actual_line, &no_act_line, &last_error);
 	}
-	
+	if (last_error == error_NONE) {
+		return 0;
+	}
 	return 1;
 }
