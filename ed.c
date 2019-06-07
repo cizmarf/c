@@ -289,7 +289,6 @@ exec_command(
 			}
 			
 			if (++address_start < *p_n_lines) {
-				get_p_act_line(p_no_act_line, &address_start, p_actual_line);
 				*p_actual_line = TAILQ_NEXT((*p_actual_line), pointers);
 				printf("%s", (*p_actual_line)->content);
 				++(address_end);
