@@ -91,9 +91,15 @@ print_last_error(enum error last_error)
 }
 
 static void
-print_error_message()
+print_error_message(int *Hcommand, enum error *last_error)
 {
-	printf("?\n");
+	if (*Hcommand) {
+		printf("?\n");
+		print_last_error(*last_error);
+	}
+	else {
+		printf("?\n");
+	}
 }
 
 
@@ -109,7 +115,8 @@ exec_command(
 			 int			*p_n_lines,
 			 struct _Line 	**p_actual_line,
 			 int			*p_no_act_line,
-			 enum error		*p_last_error)
+			 enum error		*p_last_error,
+			 int			*p_Hcommand)
 {
 	int 	address_start =		*p_no_act_line;
 	int 	address_end = 		*p_no_act_line;
@@ -132,7 +139,7 @@ exec_command(
 		 */
 		if (i == strlen(address) - 1 || i == 0) {
 			*p_last_error = error_INVALID_ADDRESS;
-			print_error_message();
+			print_error_message(p_Hcommand, p_last_error);
 			return;
 		}
 		
@@ -226,7 +233,7 @@ exec_command(
 		
 		if (!adress_valid) {
 			*p_last_error = error_INVALID_ADDRESS;
-			print_error_message();
+			print_error_message(p_Hcommand, p_last_error);
 			return;
 		}
 	}
@@ -254,7 +261,7 @@ exec_command(
 			if (*p_no_act_line == 0)
 			{
 				*p_last_error = error_INVALID_ADDRESS;
-				print_error_message();
+				print_error_message(p_Hcommand, p_last_error);
 				return;
 			}
 	
@@ -282,7 +289,7 @@ exec_command(
 			else
 			{
 				*p_last_error = error_INVALID_ADDRESS;
-				print_error_message();
+				print_error_message(p_Hcommand, p_last_error);
 				return;
 			}
 			break;
@@ -291,7 +298,7 @@ exec_command(
 		case 'H':
 			if (address_provided) {
 				*p_last_error = error_UNEXPECTED_ADDRESS;
-				print_error_message();
+				print_error_message(p_Hcommand, p_last_error);
 				return;
 			}
 			
@@ -300,14 +307,22 @@ exec_command(
 				break;
 			}
 			
-			print_last_error(*p_last_error);
+			if (!*p_Hcommand) {
+				*p_Hcommand = 1;
+				print_last_error(*p_last_error);
+			}
+			else
+			{
+				*p_Hcommand = 0;
+			}
+			
 			break;
 			
 			
 		case 'h':
 			if (address_provided) {
 				*p_last_error = error_UNEXPECTED_ADDRESS;
-				print_error_message();
+				print_error_message(p_Hcommand, p_last_error);
 				return;
 			}
 			
@@ -323,7 +338,7 @@ exec_command(
 		case 'q':
 			if (address_provided) {
 				*p_last_error = error_UNEXPECTED_ADDRESS;
-				print_error_message();
+				print_error_message(p_Hcommand, p_last_error);
 				return;
 			}
 			
@@ -345,7 +360,7 @@ exec_command(
 			if (*p_no_act_line == 0)
 			{
 				*p_last_error = error_INVALID_ADDRESS;
-				print_error_message();
+				print_error_message(p_Hcommand, p_last_error);
 				return;
 			}
 			
@@ -361,7 +376,7 @@ exec_command(
 			
 		default:
 			*p_last_error = error_UNKNOWN_COMMAND;
-			print_error_message();
+			print_error_message(p_Hcommand, p_last_error);
 			return;
 			break;
 	}
@@ -370,7 +385,7 @@ exec_command(
 	
 	if (command_suffix) {
 		*p_last_error = error_INVALID_COMMAND_SUFFIX;
-		print_error_message();
+		print_error_message(p_Hcommand, p_last_error);
 	}
 }
 
@@ -380,6 +395,7 @@ main (int argc, char ** argv)
 	int 	n_lines =		0;
 	int 	n_chars =		0;
 	char 	input[256] = 	"";
+	int		Hcommand = 		0;
 	
 	read_file(argv[1], &n_lines, &n_chars);
 	
@@ -408,7 +424,7 @@ main (int argc, char ** argv)
 		if (strlen(command) == 0)
 			command[0] = 'p';
 		
-		exec_command(command, address, &n_lines, &actual_line, &no_act_line, &last_error);
+		exec_command(command, address, &n_lines, &actual_line, &no_act_line, &last_error, &Hcommand);
 	}
 	if (last_error == error_NONE) {
 		return 0;
