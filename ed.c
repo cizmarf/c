@@ -102,6 +102,21 @@ print_error_message(int *Hcommand, enum error *last_error)
 	}
 }
 
+static void
+get_p_act_line(int *p_no_act_line, int *address_start, struct _Line **p_actual_line)
+{
+	if (*p_no_act_line > *address_start) {
+		for (int i = 0; i < *p_no_act_line - *address_start; ++i) {
+			*p_actual_line = TAILQ_PREV((*p_actual_line), lines_q, pointers);
+		}
+	}
+	else if (*p_no_act_line < *address_start) {
+		for (int i = 0; i < *address_start - *p_no_act_line; ++i) {
+			*p_actual_line = TAILQ_NEXT((*p_actual_line), pointers);
+		}
+	}
+}
+
 
 /**
  * Function processes address properly and execute provided command.
@@ -240,17 +255,6 @@ exec_command(
 	
 	char command_suffix = 0;
 	
-	if (*p_no_act_line > address_start) {
-		for (int i = 0; i < *p_no_act_line - address_start; ++i) {
-			*p_actual_line = TAILQ_PREV((*p_actual_line), lines_q, pointers);
-		}
-	}
-	else if (*p_no_act_line < address_start) {
-		for (int i = 0; i < address_start - *p_no_act_line; ++i) {
-			*p_actual_line = TAILQ_NEXT((*p_actual_line), pointers);
-		}
-	}
-	
 	switch (command[0]) {
 		case 'p':
 			if (strlen(command) > 1) {
@@ -265,12 +269,15 @@ exec_command(
 				return;
 			}
 	
+			get_p_act_line(p_no_act_line, &address_start, p_actual_line);
+			
 			for (; address_start < address_end; ++address_start) {
 				printf("%s", (*p_actual_line)->content);
 				*p_actual_line = TAILQ_NEXT((*p_actual_line), pointers);
 			}
 			printf("%s", (*p_actual_line)->content);
 			++address_start;
+			*p_no_act_line = address_end;
 			
 			break;
 			
@@ -282,9 +289,11 @@ exec_command(
 			}
 			
 			if (++address_start < *p_n_lines) {
+				get_p_act_line(p_no_act_line, &address_start, p_actual_line);
 				*p_actual_line = TAILQ_NEXT((*p_actual_line), pointers);
 				printf("%s", (*p_actual_line)->content);
 				++(address_end);
+				*p_no_act_line = address_end;
 			}
 			else
 			{
@@ -347,7 +356,11 @@ exec_command(
 				break;
 			}
 			
-			exit(1);
+			if (*p_last_error == error_NONE)
+				exit(0);
+			else
+				exit(1);
+			
 			break;
 			
 			
@@ -364,12 +377,15 @@ exec_command(
 				return;
 			}
 			
+			get_p_act_line(p_no_act_line, &address_start, p_actual_line);
+			
 			for (; address_start < address_end; ++address_start) {
 				printf("%d\t%s", address_start, (*p_actual_line)->content);
 				*p_actual_line = TAILQ_NEXT((*p_actual_line), pointers);
 			}
-			printf("%s", (*p_actual_line)->content);
+			printf("%d\t%s", address_start, (*p_actual_line)->content);
 			++address_start;
+			*p_no_act_line = address_end;
 			
 			break;
 			
@@ -380,8 +396,6 @@ exec_command(
 			return;
 			break;
 	}
-	
-	*p_no_act_line = address_end;
 	
 	if (command_suffix) {
 		*p_last_error = error_INVALID_COMMAND_SUFFIX;
