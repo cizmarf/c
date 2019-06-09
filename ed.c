@@ -34,7 +34,6 @@ TAILQ_HEAD(lines_q, _Line) lines;
 static void
 read_file (const char *arg, int *p_n_lines, int *p_n_chars)
 {
-	TAILQ_INIT(&lines);
 	FILE *fp;
 	fp = fopen(arg, "r");
 	
@@ -131,7 +130,8 @@ exec_command(
 			 struct _Line 	**p_actual_line,
 			 int			*p_no_act_line,
 			 enum error		*p_last_error,
-			 int			*p_Hcommand)
+			 int			*p_Hcommand,
+			 int 			*p_input_mode)
 {
 	int 	address_start =		*p_no_act_line;
 	int 	address_end = 		*p_no_act_line;
@@ -256,14 +256,61 @@ exec_command(
 	char command_suffix = 0;
 	
 	switch (command[0]) {
+			
+		case 'd':
+			if (strlen(command) > 1) {
+				command_suffix = 1;
+				break;
+			}
+			
+			if (*p_no_act_line == 0) {
+				*p_last_error = error_INVALID_ADDRESS;
+				print_error_message(p_Hcommand, p_last_error);
+				return;
+			}
+			
+			get_p_act_line(p_no_act_line, &address_start, p_actual_line);
+			
+			for (; address_start <= address_end; ++address_start) {
+				--(*p_n_lines);
+				struct _Line *tmp_act_line = TAILQ_NEXT(*p_actual_line, pointers);
+				
+				if (tmp_act_line == NULL) {
+					tmp_act_line = TAILQ_PREV(*p_actual_line, lines_q, pointers);
+					--(*p_no_act_line);
+				}
+				
+				TAILQ_REMOVE(&lines, tmp_act_line, pointers);
+				*p_actual_line = tmp_act_line;
+			}
+			
+			break;
+			
+			
+		case 'i':
+			if (strlen(command) > 1) {
+				command_suffix = 1;
+				break;
+			}
+			
+			if (address_start != address_end) {
+				*p_last_error = error_INVALID_ADDRESS;
+				print_error_message(p_Hcommand, p_last_error);
+				return;
+			}
+			
+			*p_input_mode = 1;
+			
+			break;
+			
+			
 		case 'p':
 			if (strlen(command) > 1) {
 				command_suffix = 1;
 				break;
 			}
 			
-			if (*p_no_act_line == 0)
-			{
+			if (*p_no_act_line == 0) {
 				*p_last_error = error_INVALID_ADDRESS;
 				print_error_message(p_Hcommand, p_last_error);
 				return;
@@ -407,10 +454,12 @@ main (int argc, char ** argv)
 {
 	int 	n_lines =		0;
 	int 	n_chars =		0;
-	char 	input[256] = 	"";
+	char 	input[1024] = 	"";
 	int		Hcommand = 		0;
-	
-	read_file(argv[1], &n_lines, &n_chars);
+	int		input_mode = 	0;
+	TAILQ_INIT(&lines);
+	if (argc == 2)
+		read_file(argv[1], &n_lines, &n_chars);
 	
 	enum error 		last_error = 	error_NONE;
 	struct _Line *	actual_line =	TAILQ_LAST(&lines, lines_q);
@@ -420,27 +469,60 @@ main (int argc, char ** argv)
 		printf("%d\n", n_chars);
 	
 	while (fgets(input, sizeof(input), stdin)) {
+		printf("actual line %s", actual_line->content);
 		strtok(input, "\n");
-		size_t i;
+		if (input_mode == 0) {
+			size_t i;
+			
+			for (i = 0; i < strlen(input); ++i)
+				if ((input[i] > 'a' && input[i] < 'z') ||
+					(input[i] > 'A' && input[i] < 'Z') || input[i] == '\n')
+					break;
+			
+			char command[256] = 	"";
+			char address[256] = 	"";
+			
+			strcpy(command, input + i);
+			strncpy(address, input, i);
+			
+			if (strlen(command) == 0)
+				command[0] = 'p';
+			
+			exec_command(command, address, &n_lines, &actual_line, &no_act_line,
+						 &last_error, &Hcommand, &input_mode);
+			
+		}
+		else
+		{
+			input_mode = 0;
+		}
 		
-		for (i = 0; i < strlen(input); ++i)
-			if ((input[i] > 'a' && input[i] < 'z') ||
-				(input[i] > 'A' && input[i] < 'Z') || input[i] == '\n')
-				break;
-				
-		char command[256] = 	"";
-		char address[256] = 	"";
-		
-		strcpy(command, input + i);
-		strncpy(address, input, i);
-		
-		if (strlen(command) == 0)
-			command[0] = 'p';
-		
-		exec_command(command, address, &n_lines, &actual_line, &no_act_line, &last_error, &Hcommand);
+		if (input_mode) {
+			printf("actual line %s", actual_line->content);
+			while (fgets(input, sizeof(input), stdin)) {
+				printf("pridavam %s", input);
+				Line * nl = malloc(sizeof(Line));
+				strcpy(nl->content, input);
+				if (actual_line == NULL)
+					TAILQ_INSERT_TAIL(&lines, nl, pointers);
+				else
+					TAILQ_INSERT_BEFORE(actual_line, nl, pointers);
+				++n_lines;
+				++no_act_line;
+				printf("actual line %s", actual_line->content);
+			}
+			input_mode = 2;
+			clearerr(stdin);
+		}
 	}
+
+	
 	if (last_error == error_NONE) {
 		return 0;
 	}
+	
 	return 1;
 }
+
+//kdyz neni specifikovany soubor tak program pada pri nejakem komandu
+// udelat w
