@@ -66,19 +66,19 @@ print_last_error(enum error last_error)
 	switch (last_error) {
 			
 		case error_INVALID_ADDRESS:
-			fprintf(stderr, "Invalid address\n");
+			printf("Invalid address\n");
 			break;
 			
 		case error_UNEXPECTED_ADDRESS:
-			fprintf(stderr, "Unexpected address\n");
+			printf("Unexpected address\n");
 			break;
 			
 		case error_UNKNOWN_COMMAND:
-			fprintf(stderr, "Unknown command\n");
+			printf("Unknown command\n");
 			break;
 			
 		case error_INVALID_COMMAND_SUFFIX:
-			fprintf(stderr, "Invalid command suffix\n");
+			printf("Invalid command suffix\n");
 			break;
 			
 		case error_NONE:
