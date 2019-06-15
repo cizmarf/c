@@ -131,7 +131,8 @@ exec_command(
 			 int			*p_no_act_line,
 			 enum error		*p_last_error,
 			 int			*p_Hcommand,
-			 int 			*p_input_mode)
+			 int 			*p_input_mode,
+			 char			*file_name)
 {
 	int 	address_start =		*p_no_act_line;
 	int 	address_end = 		*p_no_act_line;
@@ -253,9 +254,49 @@ exec_command(
 		}
 	}
 	
-	char command_suffix = 0;
+	char file[256] = 		"";
+	char command_suffix = 	0;
+	strcpy(file, file_name);
 	
 	switch (command[0]) {
+			
+		case 'w':
+			if (address_provided) {
+				*p_last_error = error_UNEXPECTED_ADDRESS;
+				print_error_message(p_Hcommand, p_last_error);
+				return;
+			}
+			
+			if (strlen(command) > 1) {
+				if (command[1] != ' ') {
+					command_suffix = 1;
+					break;
+				}
+				else
+				{
+					memcpy(file, command + 2, strlen(command) - 2);
+				}
+			}
+			
+			FILE *fp;
+			fp = fopen(file, "w");
+			
+			if (fp == NULL) {
+				return;
+			}
+			
+			Line * nl = malloc(sizeof(Line));
+			TAILQ_FOREACH(nl, &lines, pointers) {
+				fprintf(fp, "%s", nl->content);
+			}
+			
+			fclose(fp);
+			return;
+			
+			
+			
+			
+			
 			
 		case 'd':
 			if (strlen(command) > 1) {
@@ -275,13 +316,12 @@ exec_command(
 				--(*p_n_lines);
 				struct _Line *tmp_act_line = TAILQ_NEXT(*p_actual_line, pointers);
 				
-				if (tmp_act_line == NULL) {
+				if (tmp_act_line == NULL)
 					tmp_act_line = TAILQ_PREV(*p_actual_line, lines_q, pointers);
-					--(*p_no_act_line);
-				}
 				
 				TAILQ_REMOVE(&lines, tmp_act_line, pointers);
 				*p_actual_line = tmp_act_line;
+				--(*p_no_act_line);
 			}
 			
 			break;
@@ -457,9 +497,12 @@ main (int argc, char ** argv)
 	char 	input[1024] = 	"";
 	int		Hcommand = 		0;
 	int		input_mode = 	0;
+	char	file_name[254] = 	"";
 	TAILQ_INIT(&lines);
-	if (argc == 2)
+	if (argc == 2) {
 		read_file(argv[1], &n_lines, &n_chars);
+		strcpy(file_name, argv[1]);
+	}
 	
 	enum error 		last_error = 	error_NONE;
 	struct _Line *	actual_line =	TAILQ_LAST(&lines, lines_q);
@@ -469,7 +512,6 @@ main (int argc, char ** argv)
 		printf("%d\n", n_chars);
 	
 	while (fgets(input, sizeof(input), stdin)) {
-		printf("actual line %s", actual_line->content);
 		strtok(input, "\n");
 		if (input_mode == 0) {
 			size_t i;
@@ -488,8 +530,11 @@ main (int argc, char ** argv)
 			if (strlen(command) == 0)
 				command[0] = 'p';
 			
+			if (input[0] == 'w')
+				strcpy(command, input);
+			
 			exec_command(command, address, &n_lines, &actual_line, &no_act_line,
-						 &last_error, &Hcommand, &input_mode);
+						 &last_error, &Hcommand, &input_mode, file_name);
 			
 		}
 		else
@@ -524,5 +569,4 @@ main (int argc, char ** argv)
 	return 1;
 }
 
-//kdyz neni specifikovany soubor tak program pada pri nejakem komandu
 // udelat w
