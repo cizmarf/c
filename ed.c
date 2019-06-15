@@ -66,19 +66,19 @@ print_last_error(enum error last_error)
 	switch (last_error) {
 			
 		case error_INVALID_ADDRESS:
-			printf("Invalid address\n");
+			fprintf(stderr, "Invalid address\n");
 			break;
 			
 		case error_UNEXPECTED_ADDRESS:
-			printf("Unexpected address\n");
+			fprintf(stderr, "Unexpected address\n");
 			break;
 			
 		case error_UNKNOWN_COMMAND:
-			printf("Unknown command\n");
+			fprintf(stderr, "Unknown command\n");
 			break;
 			
 		case error_INVALID_COMMAND_SUFFIX:
-			printf("Invalid command suffix\n");
+			fprintf(stderr, "Invalid command suffix\n");
 			break;
 			
 		case error_NONE:
@@ -282,6 +282,7 @@ exec_command(
 			fp = fopen(file, "w");
 			
 			if (fp == NULL) {
+				fprintf(stderr, "No current filename\n");
 				return;
 			}
 			
@@ -292,10 +293,6 @@ exec_command(
 			
 			fclose(fp);
 			return;
-			
-			
-			
-			
 			
 			
 		case 'd':
