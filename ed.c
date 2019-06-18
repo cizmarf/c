@@ -286,12 +286,15 @@ exec_command(
 				return;
 			}
 			
+			int no_char = 0;
 			Line * nl = malloc(sizeof(Line));
 			TAILQ_FOREACH(nl, &lines, pointers) {
+				no_char += strlen(nl->content);
 				fprintf(fp, "%s", nl->content);
 			}
 			
 			fclose(fp);
+			printf("%d\n", no_char);
 			return;
 			
 			
