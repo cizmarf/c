@@ -543,9 +543,7 @@ main (int argc, char ** argv)
 		}
 		
 		if (input_mode) {
-			printf("actual line %s", actual_line->content);
 			while (fgets(input, sizeof(input), stdin)) {
-				printf("pridavam %s", input);
 				Line * nl = malloc(sizeof(Line));
 				strcpy(nl->content, input);
 				if (actual_line == NULL)
@@ -554,7 +552,6 @@ main (int argc, char ** argv)
 					TAILQ_INSERT_BEFORE(actual_line, nl, pointers);
 				++n_lines;
 				++no_act_line;
-				printf("actual line %s", actual_line->content);
 			}
 			input_mode = 2;
 			clearerr(stdin);
