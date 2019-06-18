@@ -13,7 +13,8 @@ enum error {
 	error_INVALID_ADDRESS,
 	error_UNEXPECTED_ADDRESS,
 	error_UNKNOWN_COMMAND,
-	error_INVALID_COMMAND_SUFFIX
+	error_INVALID_COMMAND_SUFFIX,
+	error_BUFFER_MODIFIED
 };
 
 typedef struct _Line {
@@ -81,6 +82,10 @@ print_last_error(enum error last_error)
 			printf("Invalid command suffix\n");
 			break;
 			
+		case error_BUFFER_MODIFIED:
+			printf("Warning: buffer modified\n");
+			break;
+			
 		case error_NONE:
 			break;
 			
@@ -132,7 +137,8 @@ exec_command(
 			 enum error		*p_last_error,
 			 int			*p_Hcommand,
 			 int 			*p_input_mode,
-			 char			*file_name)
+			 char			*file_name,
+			 int			*p_modified)
 {
 	int 	address_start =		*p_no_act_line;
 	int 	address_end = 		*p_no_act_line;
@@ -261,6 +267,9 @@ exec_command(
 	switch (command[0]) {
 			
 		case 'w':
+			if (*p_modified == 2)
+				*p_modified = 1;
+			
 			if (address_provided) {
 				*p_last_error = error_UNEXPECTED_ADDRESS;
 				print_error_message(p_Hcommand, p_last_error);
@@ -299,6 +308,9 @@ exec_command(
 			
 			
 		case 'd':
+			if (*p_modified == 2)
+				*p_modified = 1;
+			
 			if (strlen(command) > 1) {
 				command_suffix = 1;
 				break;
@@ -314,6 +326,7 @@ exec_command(
 			*p_no_act_line = address_start;
 			
 			for (; address_start <= address_end; ++address_start) {
+				*p_modified = 1;
 				--(*p_n_lines);
 				struct _Line *tmp_act_line = TAILQ_NEXT(*p_actual_line, pointers);
 				
@@ -331,6 +344,9 @@ exec_command(
 			
 			
 		case 'i':
+			if (*p_modified == 2)
+				*p_modified = 1;
+			
 			if (strlen(command) > 1) {
 				command_suffix = 1;
 				break;
@@ -348,6 +364,9 @@ exec_command(
 			
 			
 		case 'p':
+			if (*p_modified == 2)
+				*p_modified = 1;
+			
 			if (strlen(command) > 1) {
 				command_suffix = 1;
 				break;
@@ -373,6 +392,9 @@ exec_command(
 			
 			
 		case '\n':
+			if (*p_modified == 2)
+				*p_modified = 1;
+			
 			if (strlen(command) > 1) {
 				command_suffix = 1;
 				break;
@@ -394,6 +416,9 @@ exec_command(
 			
 			
 		case 'H':
+			if (*p_modified == 2)
+				*p_modified = 1;
+			
 			if (address_provided) {
 				*p_last_error = error_UNEXPECTED_ADDRESS;
 				print_error_message(p_Hcommand, p_last_error);
@@ -418,6 +443,9 @@ exec_command(
 			
 			
 		case 'h':
+			if (*p_modified == 2)
+				*p_modified = 1;
+			
 			if (address_provided) {
 				*p_last_error = error_UNEXPECTED_ADDRESS;
 				print_error_message(p_Hcommand, p_last_error);
@@ -445,6 +473,13 @@ exec_command(
 				break;
 			}
 			
+			if (*p_modified == 1) {
+				*p_modified = 2;
+				*p_last_error = error_BUFFER_MODIFIED;
+				print_error_message(p_Hcommand, p_last_error);
+				return;
+			}
+			
 			if (*p_last_error == error_NONE)
 				exit(0);
 			else
@@ -454,6 +489,9 @@ exec_command(
 			
 			
 		case 'n':
+			if (*p_modified == 2)
+				*p_modified = 1;
+			
 			if (strlen(command) > 1) {
 				command_suffix = 1;
 				break;
@@ -495,6 +533,7 @@ exec_command(
 int
 main (int argc, char ** argv)
 {
+	int		modified = 		0;
 	int 	n_lines =		0;
 	int 	n_chars =		0;
 	char 	input[1024] = 	"";
@@ -537,7 +576,7 @@ main (int argc, char ** argv)
 				strcpy(command, input);
 			
 			exec_command(command, address, &n_lines, &actual_line, &no_act_line,
-						 &last_error, &Hcommand, &input_mode, file_name);
+						 &last_error, &Hcommand, &input_mode, file_name, &modified);
 			
 		}
 		else
@@ -547,6 +586,7 @@ main (int argc, char ** argv)
 		
 		if (input_mode) {
 			while (fgets(input, sizeof(input), stdin)) {
+				modified = 1;
 				Line * nl = malloc(sizeof(Line));
 				strcpy(nl->content, input);
 				if (actual_line == NULL)
