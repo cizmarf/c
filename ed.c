@@ -310,8 +310,7 @@ exec_command(
 				return;
 			}
 			
-			get_p_act_line(p_no_act_line, &address_start, p_actual_line);
-			
+			get_p_act_line(p_no_act_line, &address_start, p_actual_line);			
 			for (; address_start <= address_end; ++address_start) {
 				--(*p_n_lines);
 				struct _Line *tmp_act_line = TAILQ_NEXT(*p_actual_line, pointers);
@@ -319,7 +318,7 @@ exec_command(
 				if (tmp_act_line == NULL)
 					tmp_act_line = TAILQ_PREV(*p_actual_line, lines_q, pointers);
 				
-				TAILQ_REMOVE(&lines, tmp_act_line, pointers);
+				TAILQ_REMOVE(&lines, *p_actual_line, pointers);
 				*p_actual_line = tmp_act_line;
 				--(*p_no_act_line);
 			}
