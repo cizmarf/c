@@ -304,6 +304,7 @@ exec_command(
 			
 			fclose(fp);
 			printf("%d\n", no_char);
+			*p_modified = 0;
 			return;
 			
 			
