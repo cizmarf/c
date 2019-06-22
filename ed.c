@@ -353,6 +353,8 @@ exec_command(
 				break;
 			}
 			
+			get_p_act_line(p_no_act_line, &address_start, p_actual_line);
+			
 			if (address_start != address_end) {
 				*p_last_error = error_INVALID_ADDRESS;
 				print_error_message(p_Hcommand, p_last_error);
@@ -360,6 +362,7 @@ exec_command(
 			}
 			
 			*p_input_mode = 1;
+			*p_no_act_line = address_end;
 			
 			break;
 			
@@ -556,7 +559,7 @@ main (int argc, char ** argv)
 	
 	while (fgets(input, sizeof(input), stdin)) {
 		strtok(input, "\n");
-		if (input_mode == 0) {
+		if (input_mode == 0 || input_mode == 2) {
 			size_t i;
 			
 			for (i = 0; i < strlen(input); ++i)
@@ -585,8 +588,20 @@ main (int argc, char ** argv)
 			input_mode = 0;
 		}
 		
-		if (input_mode) {
+		if (input_mode == 1) {
 			while (fgets(input, sizeof(input), stdin)) {
+				if (input[0] == '.')
+					break;
+				
+				char *dot = strstr(input, ".");
+				if (dot != NULL) {
+					char tmp_input[1024];
+					memcpy(tmp_input, input, (int)(dot - input));
+					tmp_input[(int)(dot - input)] = '\0';
+					memcpy(input, tmp_input, strlen(tmp_input));
+					input[strlen(tmp_input)] = '\n';
+					input[strlen(tmp_input) + 1] = '\0';
+				}
 				modified = 1;
 				Line * nl = malloc(sizeof(Line));
 				strcpy(nl->content, input);
@@ -596,6 +611,8 @@ main (int argc, char ** argv)
 					TAILQ_INSERT_BEFORE(actual_line, nl, pointers);
 				++n_lines;
 				++no_act_line;
+				if (dot != NULL)
+					break;
 			}
 			input_mode = 2;
 			clearerr(stdin);
