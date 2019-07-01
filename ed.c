@@ -254,9 +254,12 @@ exec_command(
 			adress_valid = 0;
 		
 		if (!adress_valid) {
-			*p_last_error = error_INVALID_ADDRESS;
-			print_error_message(p_Hcommand, p_last_error);
-			return;
+			if (command[0] == 'i' && strlen(command) == 1) {
+			}else{
+				*p_last_error = error_INVALID_ADDRESS;
+				print_error_message(p_Hcommand, p_last_error);
+				return;
+			}
 		}
 	}
 	
@@ -594,6 +597,7 @@ main (int argc, char ** argv)
 					break;
 				
 				char *dot = strstr(input, ".");
+				
 				if (dot != NULL) {
 					char tmp_input[1024];
 					memcpy(tmp_input, input, (int)(dot - input));
@@ -602,13 +606,18 @@ main (int argc, char ** argv)
 					input[strlen(tmp_input)] = '\n';
 					input[strlen(tmp_input) + 1] = '\0';
 				}
+				
 				modified = 1;
 				Line * nl = malloc(sizeof(Line));
 				strcpy(nl->content, input);
-				if (actual_line == NULL)
+				
+				if (actual_line == NULL) {
 					TAILQ_INSERT_TAIL(&lines, nl, pointers);
-				else
+					actual_line = TAILQ_LAST(&lines, lines_q);
+				}else{
 					TAILQ_INSERT_BEFORE(actual_line, nl, pointers);
+				}
+				
 				++n_lines;
 				++no_act_line;
 				if (dot != NULL)
