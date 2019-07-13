@@ -14,7 +14,8 @@ enum error {
 	error_UNEXPECTED_ADDRESS,
 	error_UNKNOWN_COMMAND,
 	error_INVALID_COMMAND_SUFFIX,
-	error_BUFFER_MODIFIED
+	error_BUFFER_MODIFIED,
+	error_UNEXPECTED_COMMAND_SUFFIX
 };
 
 typedef struct _Line {
@@ -84,6 +85,10 @@ print_last_error(enum error last_error)
 			
 		case error_BUFFER_MODIFIED:
 			printf("Warning: buffer modified\n");
+			break;
+			
+		case error_UNEXPECTED_COMMAND_SUFFIX:
+			printf("Unexpected command suffix\n");
 			break;
 			
 		case error_NONE:
@@ -308,6 +313,7 @@ exec_command(
 			fclose(fp);
 			printf("%d\n", no_char);
 			*p_modified = 0;
+			strcpy(file_name, file);
 			return;
 			
 			
@@ -532,7 +538,11 @@ exec_command(
 	}
 	
 	if (command_suffix) {
-		*p_last_error = error_INVALID_COMMAND_SUFFIX;
+		if (command[0] == 'w')
+			*p_last_error = error_UNEXPECTED_COMMAND_SUFFIX;
+		else
+			*p_last_error = error_INVALID_COMMAND_SUFFIX;
+		
 		print_error_message(p_Hcommand, p_last_error);
 	}
 }
@@ -636,4 +646,4 @@ main (int argc, char ** argv)
 	return 1;
 }
 
-// udelat w
+// TODO test 30, chce jmeno souboru i kdyz je poskytnuto v argumentu w
