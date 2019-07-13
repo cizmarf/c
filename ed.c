@@ -313,7 +313,10 @@ exec_command(
 			fclose(fp);
 			printf("%d\n", no_char);
 			*p_modified = 0;
-			strcpy(file_name, file);
+			
+			if (strcmp(file_name, ""))
+				strcpy(file_name, file);
+			
 			return;
 			
 			
@@ -362,13 +365,13 @@ exec_command(
 				break;
 			}
 			
-			get_p_act_line(p_no_act_line, &address_start, p_actual_line);
-			
-			if (address_start != address_end) {
+			if (address_start > *p_n_lines) {
 				*p_last_error = error_INVALID_ADDRESS;
 				print_error_message(p_Hcommand, p_last_error);
 				return;
 			}
+			
+			get_p_act_line(p_no_act_line, &address_start, p_actual_line);
 			
 			*p_input_mode = 1;
 			*p_no_act_line = address_end;
@@ -413,7 +416,7 @@ exec_command(
 				break;
 			}
 			
-			if (++address_start < *p_n_lines) {
+			if (++address_start <= *p_n_lines) {
 				*p_actual_line = TAILQ_NEXT((*p_actual_line), pointers);
 				printf("%s", (*p_actual_line)->content);
 				++(address_end);
@@ -603,8 +606,16 @@ main (int argc, char ** argv)
 		
 		if (input_mode == 1) {
 			while (fgets(input, sizeof(input), stdin)) {
-				if (input[0] == '.')
+				if (input[0] == '.'){
+					if (actual_line == NULL) {
+						actual_line = TAILQ_LAST(&lines, lines_q);
+					}else{
+						actual_line = TAILQ_PREV((actual_line), lines_q, pointers);
+						--no_act_line;
+					}
+					
 					break;
+				}
 				
 				char *dot = strstr(input, ".");
 				
@@ -623,15 +634,23 @@ main (int argc, char ** argv)
 				
 				if (actual_line == NULL) {
 					TAILQ_INSERT_TAIL(&lines, nl, pointers);
-					actual_line = TAILQ_LAST(&lines, lines_q);
+					//actual_line = TAILQ_LAST(&lines, lines_q);
 				}else{
 					TAILQ_INSERT_BEFORE(actual_line, nl, pointers);
 				}
 				
 				++n_lines;
 				++no_act_line;
-				if (dot != NULL)
+				if (dot != NULL) {
+					if (actual_line == NULL) {
+						actual_line = TAILQ_LAST(&lines, lines_q);
+					}else{
+						actual_line = TAILQ_PREV((actual_line), lines_q, pointers);
+						--no_act_line;
+					}
+					
 					break;
+				}
 			}
 			input_mode = 2;
 			clearerr(stdin);
