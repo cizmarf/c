@@ -314,7 +314,7 @@ exec_command(
 			printf("%d\n", no_char);
 			*p_modified = 0;
 			
-			if (strcmp(file_name, ""))
+			if (!strcmp(file_name, ""))
 				strcpy(file_name, file);
 			
 			return;
