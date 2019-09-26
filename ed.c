@@ -5,6 +5,11 @@
 #include <string.h>
 #include <ctype.h>
 
+enum {
+	two_five_six = 256,
+	one_o_two_four = 1024
+};
+
 /**
  * Enum contains all errors aliases.
  */ 
@@ -20,7 +25,7 @@ enum error {
 
 typedef struct _Line {
 	TAILQ_ENTRY(_Line) pointers;
-	char content[1024];
+	char content[one_o_two_four];
 } Line;
 
 TAILQ_HEAD(lines_q, _Line) lines;
@@ -44,11 +49,15 @@ read_file (const char *arg, int *p_n_lines, int *p_n_chars)
 		return;
 	}
 	
-	char line[1024];
+	char line[one_o_two_four];
 	
-	while (fgets ( line, sizeof(line), fp ) != NULL) {
+	while (fgets(line, sizeof(line), fp) != NULL) {
 		Line * nl = malloc(sizeof(Line));
-		strcpy(nl->content, line);
+		if (nl == NULL) {
+			fprintf(stderr, "Memory error.\n");
+			exit(1);
+		}
+		strncpy(nl->content, line, two_five_six);
 		TAILQ_INSERT_TAIL(&lines, nl, pointers);
 		*p_n_chars += strlen(line);
 		++*p_n_lines;
@@ -99,6 +108,7 @@ print_last_error(enum error last_error)
 	}
 }
 
+
 static void
 print_error_message(int *Hcommand, enum error *last_error)
 {
@@ -106,7 +116,8 @@ print_error_message(int *Hcommand, enum error *last_error)
 		printf("?\n");
 		print_last_error(*last_error);
 	}
-	else {
+	else
+	{
 		printf("?\n");
 	}
 }
@@ -150,8 +161,8 @@ exec_command(
 	char	address_provided = 	0;
 	
 	if (strlen(address) != 0) {
-		char 	first_part[256] = 	"";
-		char 	second_part[256] = 	"";
+		char 	first_part[two_five_six] = 	"";
+		char 	second_part[two_five_six] = 	"";
 		size_t	i = 				0;
 		char	adress_valid = 		1;
 		
@@ -171,7 +182,7 @@ exec_command(
 		}
 		
 		strncpy(first_part, address, i);
-		strcpy(second_part, address + i + 1);
+		strncpy(second_part, address + i + 1, strlen(address) - i - 1);
 		
 		/*
 		 * Both address fields specified
@@ -252,15 +263,16 @@ exec_command(
 			address_end = address_start;
 		}
 		else
+		{
 			adress_valid = 0;
+		}
 		
 		if (address_end > *p_n_lines ||	address_start > *p_n_lines ||
 			address_start <= 0 || address_end <= 0)
 			adress_valid = 0;
 		
 		if (!adress_valid) {
-			if (command[0] == 'i' && strlen(command) == 1) {
-			}else{
+			if (command[0] != 'i' || strlen(command) != 1) {
 				*p_last_error = error_INVALID_ADDRESS;
 				print_error_message(p_Hcommand, p_last_error);
 				return;
@@ -268,9 +280,9 @@ exec_command(
 		}
 	}
 	
-	char file[256] = 		"";
+	char file[two_five_six] = 		"";
 	char command_suffix = 	0;
-	strcpy(file, file_name);
+	strncpy(file, file_name, two_five_six);
 	
 	switch (command[0]) {
 			
@@ -305,6 +317,10 @@ exec_command(
 			
 			int no_char = 0;
 			Line * nl = malloc(sizeof(Line));
+			if (nl == NULL) {
+				fprintf(stderr, "Memory error.\n");
+				exit(1);
+			}
 			TAILQ_FOREACH(nl, &lines, pointers) {
 				no_char += strlen(nl->content);
 				fprintf(fp, "%s", nl->content);
@@ -315,7 +331,7 @@ exec_command(
 			*p_modified = 0;
 			
 			if (!strcmp(file_name, ""))
-				strcpy(file_name, file);
+				strncpy(file_name, file, two_five_six);
 			
 			return;
 			
@@ -347,6 +363,7 @@ exec_command(
 					tmp_act_line = TAILQ_PREV(*p_actual_line, lines_q, pointers);
 				
 				TAILQ_REMOVE(&lines, *p_actual_line, pointers);
+				free(p_actual_line);
 				*p_actual_line = tmp_act_line;
 			}
 			
@@ -556,14 +573,17 @@ main (int argc, char ** argv)
 	int		modified = 		0;
 	int 	n_lines =		0;
 	int 	n_chars =		0;
-	char 	input[1024] = 	"";
+	char 	input[one_o_two_four] = 	"";
 	int		Hcommand = 		0;
 	int		input_mode = 	0;
-	char	file_name[254] = 	"";
+	char	file_name[two_five_six] = 	"";
 	TAILQ_INIT(&lines);
 	if (argc == 2) {
 		read_file(argv[1], &n_lines, &n_chars);
-		strcpy(file_name, argv[1]);
+		if (strlen(argv[1]) > two_five_six) {
+			printf("Only first 256 characters read.\n");
+		}
+		strncpy(file_name, argv[1], two_five_six);
 	}
 	
 	enum error 		last_error = 	error_NONE;
@@ -583,17 +603,17 @@ main (int argc, char ** argv)
 					(input[i] > 'A' && input[i] < 'Z') || input[i] == '\n')
 					break;
 			
-			char command[256] = 	"";
-			char address[256] = 	"";
+			char command[two_five_six] = 	"";
+			char address[two_five_six] = 	"";
 			
-			strcpy(command, input + i);
+			strncpy(command, input + i, strlen(input) - i);
 			strncpy(address, input, i);
 			
 			if (strlen(command) == 0)
 				command[0] = 'p';
 			
 			if (input[0] == 'w')
-				strcpy(command, input);
+				strncpy(command, input, two_five_six);
 			
 			exec_command(command, address, &n_lines, &actual_line, &no_act_line,
 						 &last_error, &Hcommand, &input_mode, file_name, &modified);
@@ -609,7 +629,9 @@ main (int argc, char ** argv)
 				if (input[0] == '.'){
 					if (actual_line == NULL) {
 						actual_line = TAILQ_LAST(&lines, lines_q);
-					}else{
+					}
+					else
+					{
 						actual_line = TAILQ_PREV((actual_line), lines_q, pointers);
 						--no_act_line;
 					}
@@ -620,7 +642,7 @@ main (int argc, char ** argv)
 				char *dot = strstr(input, ".");
 				
 				if (dot != NULL) {
-					char tmp_input[1024];
+					char tmp_input[one_o_two_four];
 					memcpy(tmp_input, input, (int)(dot - input));
 					tmp_input[(int)(dot - input)] = '\0';
 					memcpy(input, tmp_input, strlen(tmp_input));
@@ -630,21 +652,25 @@ main (int argc, char ** argv)
 				
 				modified = 1;
 				Line * nl = malloc(sizeof(Line));
-				strcpy(nl->content, input);
-				
-				if (actual_line == NULL) {
-					TAILQ_INSERT_TAIL(&lines, nl, pointers);
-					//actual_line = TAILQ_LAST(&lines, lines_q);
-				}else{
-					TAILQ_INSERT_BEFORE(actual_line, nl, pointers);
+				if (nl == NULL) {
+					fprintf(stderr, "Memory error.\n");
+					exit(1);
 				}
+				strncpy(nl->content, input, two_five_six);
+				
+				if (actual_line == NULL)
+					TAILQ_INSERT_TAIL(&lines, nl, pointers);
+				else
+					TAILQ_INSERT_BEFORE(actual_line, nl, pointers);
 				
 				++n_lines;
 				++no_act_line;
 				if (dot != NULL) {
 					if (actual_line == NULL) {
 						actual_line = TAILQ_LAST(&lines, lines_q);
-					}else{
+					}
+					else
+					{
 						actual_line = TAILQ_PREV((actual_line), lines_q, pointers);
 						--no_act_line;
 					}
@@ -664,5 +690,3 @@ main (int argc, char ** argv)
 	
 	return 1;
 }
-
-// TODO test 30, chce jmeno souboru i kdyz je poskytnuto v argumentu w
