@@ -182,7 +182,7 @@ exec_command(
 		}
 		
 		strncpy(first_part, address, i);
-		strncpy(second_part, address + i + 1, strlen(address) - i - 1);
+		strncpy(second_part, address + i + 1, strlen(address) - i);
 		
 		/*
 		 * Both address fields specified
@@ -363,7 +363,7 @@ exec_command(
 					tmp_act_line = TAILQ_PREV(*p_actual_line, lines_q, pointers);
 				
 				TAILQ_REMOVE(&lines, *p_actual_line, pointers);
-				free(p_actual_line);
+				free(*p_actual_line);
 				*p_actual_line = tmp_act_line;
 			}
 			
